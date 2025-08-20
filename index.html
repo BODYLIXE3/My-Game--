@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة ممتعة</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #1a1a3d, #2a4066);
+            color: #e0e0e0;
+            font-family: 'Tajawal', Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            transition: background 1s ease;
+        }
+        h1, h2 {
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        button {
+            background: linear-gradient(45deg, #ff4b2b, #ff416c);
+            color: white;
+            padding: 15px 30px;
+            margin: 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.5s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        #wheel {
+            display: block;
+            margin: 30px auto;
+            border: 8px solid #2a2a2a;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
+        #wheel:hover {
+            transform: scale(1.02);
+        }
+        .scores {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px;
+            gap: 15px;
+        }
+        .score-item {
+            background: linear-gradient(45deg, #2a4066, #3b5998);
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background 0.5s;
+        }
+        .score-item:hover {
+            transform: translateY(-5px) rotate(3deg);
+            background: linear-gradient(45deg, #3b5998, #2a4066);
+        }
+        #question, #answer {
+            font-size: 24px;
+            margin: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            animation: fadeIn 0.5s, bounceIn 0.5s;
+            max-width: 80%;
+            word-wrap: break-word;
+            transition: background 0.5s, transform 0.3s;
+        }
+        #question:hover, #answer:hover {
+            background: rgba(0,0,0,0.7);
+            transform: scale(1.03);
+        }
+        #timer {
+            font-size: 48px;
+            margin: 20px;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffd700;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        select, input {
+            padding: 12px;
+            margin: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: #333;
+            color: white;
+            width: 200px;
+            transition: transform 0.2s, background 0.5s;
+        }
+        select:hover, input:hover {
+            transform: scale(1.05);
+            background: #444;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+            to { text-shadow: 0 0 20px rgba(255,255,255,0.6); }
+        }
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="home">
+        <h1>مرحبًا بك في اللعبة الممتعة!</h1>
+        <button id="startBtn">إبدأ اللعب</button>
+        
+    </div>
+    <div id="gameSelect" style="display:none;">
+        <h2>اختر نوع اللعبة</h2>
+        <button id="generalBtn">معلومات عامة</button>
+        <button id="confessionsBtn">اعترافات</button>
+        <button id="guessBtn">خمن الاسم</button>
+    </div>
+    <div id="setup" style="display:none;">
+        <h2>إعداد اللعبة</h2>
+        <label>عدد الأسئلة:</label>
+        <select id="numQuestions">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
+            <option value="50">50</option>
+        </select><br>
+        <label>عدد اللاعبين:</label>
+        <select id="numPlayers" onchange="generateNameInputs()">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select><br>
+        <div id="names"></div>
+        <button id="startGameBtn">بدء اللعبة</button>
+    </div>
+    <div id="game" style="display:none;">
+        <canvas id="wheel" width="600" height="600"></canvas>
+        <button id="spinBtn">دور العجلة</button>
+        <div id="question" style="display:none;"></div>
+        <div id="timer"></div>
+        <div id="answer" style="display:none;"></div>
+        <div id="buttons" style="display:none;">
+            <button id="correctBtn">صح</button>
+            <button id="wrongBtn">خطأ</button>
+        </div>
+        <div class="scores" id="scoresList"></div>
+    </div>
+    <div id="end" style="display:none;">
+        <h2>انتهت اللعبة!</h2>
+        <div id="winner"></div>
+        <button id="restart">العب مرة أخرى</button>
+    </div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        let gameType = '';
+        let questions = [];
+        let players = [];
+        let currentPlayer = null;
+        let currentWheelAngle = 0;
+        let questionsAsked = 0;
+        let usedQuestions = new Set();
+        const totalQuestions = () => parseInt(document.getElementById('numQuestions').value);
+        const colors = ['#ff4b2b', '#ff416c', '#00c4b4', '#a8e063', '#ff9a00', '#6b48ff', '#ff6bcb', '#00b7eb', '#ffeb3b', '#ff2d55'];
+
+        // Sounds
+        const spinSound = new Audio('https://freesound.org/data/previews/171/171671_2437358-lq.mp3');
+        const correctSound = new Audio('https://freesound.org/data/previews/171/171672_2437358-lq.mp3');
+        const wrongSound = new Audio('https://freesound.org/data/previews/476/476514_8931597-lq.mp3');
+        const winSound = new Audio('https://freesound.org/data/previews/511/511484_9119133-lq.mp3');
+        const clickSound = new Audio('https://freesound.org/data/previews/171/171615_2437358-lq.mp3');
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function countryFlag(code) {
+            if (!code) return '';
+            return code.toUpperCase().split('').map(char => String.fromCodePoint(127397 + char.charCodeAt(0))).join('');
+        }
+
+        async function loadQuestions(num) {
+            try {
+                if (gameType === 'general') {
+                    const arabicQuestions = [
+                        { question: 'ما هي عاصمة مصر؟', correct_answer: 'القاهرة', id: '1' },
+                        { question: 'ما هو أطول نهر في العالم العربي؟', correct_answer: 'نهر النيل', id: '2' },
+                        { question: 'في أي مدينة يقع الحرم المكي؟', correct_answer: 'مكة المكرمة', id: '3' },
+                        { question: 'ما هي الدولة العربية التي تُعرف بلؤلؤة الخليج؟', correct_answer: 'البحرين', id: '4' },
+                        { question: 'من هو الشاعر العربي الملقب بأمير الشعراء؟', correct_answer: 'أحمد شوقي', id: '5' },
+                        { question: 'ما هي عاصمة الجزائر؟', correct_answer: 'الجزائر العاصمة', id: '6' },
+                        { question: 'ما هي الدولة العربية التي تشتهر ببرج خليفة؟', correct_answer: 'الإمارات', id: '7' },
+                        { question: 'ما هو اسم الخليج الذي يفصل بين شبه الجزيرة العربية وإيران؟', correct_answer: 'الخليج العربي', id: '8' },
+                        { question: 'في أي مدينة عربية يقع الجامع الأزهر؟', correct_answer: 'القاهرة', id: '9' },
+                        { question: 'ما هي عاصمة السعودية؟', correct_answer: 'الرياض', id: '10' },
+                        { question: 'ما هي الدولة العربية التي تقع على البحر الأحمر وخليج عدن؟', correct_answer: 'اليمن', id: '11' },
+                        { question: 'من هو الصحابي الملقب بفارس الرسول؟', correct_answer: 'حمزة بن عبد المطلب', id: '12' },
+                        { question: 'ما هي عاصمة المغرب؟', correct_answer: 'الرباط', id: '13' },
+                        { question: 'ما هو اسم أكبر صحراء في شبه الجزيرة العربية؟', correct_answer: 'الربع الخالي', id: '14' },
+                        { question: 'ما هي الدولة العربية التي تشتهر ببترا؟', correct_answer: 'الأردن', id: '15' },
+                        { question: 'من هو الخليفة الأول في الإسلام؟', correct_answer: 'أبو بكر الصديق', id: '16' },
+                        { question:'ما هي عاصمة لبنان؟', correct_answer: 'بيروت', id: '17' },
+                        { question: 'ما هو اسم الجبل الذي نزل فيه الوحي على النبي محمد؟', correct_answer: 'جبل حراء', id: '18' },
+                        { question: 'ما هي عاصمة تونس؟', correct_answer: 'تونس', id: '19' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بالأهرامات؟', correct_answer: 'مصر', id: '20' },
+                        { question: 'ما هي عاصمة الكويت؟', correct_answer: 'الكويت', id: '21' },
+                        { question: 'ما هي عاصمة قطر؟', correct_answer: 'الدوحة', id: '22' },
+                        { question: 'ما هي عاصمة السودان؟', correct_answer: 'الخرطوم', id: '23' },
+                        { question: 'ما هي عاصمة الأردن؟', correct_answer: 'عمان', id: '24' },
+                        { question: 'ما هي عاصمة العراق؟', correct_answer: 'بغداد', id: '25' },
+                        { question: 'ما هي عاصمة سوريا؟', correct_answer: 'دمشق', id: '26' },
+                        { question: 'ما هي عاصمة الإمارات؟', correct_answer: 'أبوظبي', id: '27' },
+                        { question: 'ما هي عاصمة عمان؟', correct_answer: 'مسقط', id: '28' },
+                        { question: 'ما هي عاصمة الصومال؟', correct_answer: 'مقديشو', id: '29' },
+                        { question: 'ما هي عاصمة جيبوتي؟', correct_answer: 'جيبوتي', id: '30' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بجزيرتي تيران وصنافير؟', correct_answer: 'مصر', id: '31' },
+                        { question: 'ما هو اسم البحر الذي يحيط بجزيرة البحرين؟', correct_answer: 'الخليج العربي', id: '32' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بالمدينة المنورة؟', correct_answer: 'السعودية', id: '33' },
+                        { question: 'من هو الصحابي الملقب بأسد الله؟', correct_answer: 'حمزة بن عبد المطلب', id: '34' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بقصر الحمراء؟', correct_answer: 'إسبانيا (الأندلس تاريخيًا)', id: '35' },
+                        { question: 'ما هو اسم الخليفة الذي بنى قبة الصخرة؟', correct_answer: 'عبد الملك بن مروان', id: '36' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بمدينة مراكش؟', correct_answer: 'المغرب', id: '37' },
+                        { question: 'من هو الصحابي الملقب بسيف الله المسلول؟', correct_answer: 'خالد بن الوليد', id: '38' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بحديقة الأزهر؟', correct_answer: 'مصر', id: '39' },
+                        { question: 'ما هو اسم الشاعر العربي الملقب بشاعر الخضراء؟', correct_answer: 'إبراهيم ناجي', id: '40' },
+                        { question: 'ما هي عاصمة فلسطين؟', correct_answer: 'القدس', id: '41' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بشلالات أوزود؟', correct_answer: 'المغرب', id: '42' },
+                        { question: 'من هو الصحابي الذي لقب بذي الجناحين؟', correct_answer: 'جعفر بن أبي طالب', id: '43' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بمدينة صور؟', correct_answer: 'لبنان', id: '44' },
+                        { question: 'ما هو اسم البحر الذي يحيط باليمن من الجنوب؟', correct_answer: 'بحر العرب', id: '45' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بمدينة فاس؟', correct_answer: 'المغرب', id: '46' },
+                        { question: 'من هو الصحابي الملقب بالفاروق؟', correct_answer: 'عمر بن الخطاب', id: '47' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بالعين الزرقاء؟', correct_answer: 'الأردن', id: '48' },
+                        { question: 'ما هو اسم الخليفة الذي أسس الدولة الأموية؟', correct_answer: 'معاوية بن أبي سفيان', id: '49' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بمدينة جدة؟', correct_answer: 'السعودية', id: '50' },
+                        { question: 'من هو القائد العربي الذي فتح الأندلس عام 711م؟', correct_answer: 'طارق بن زياد', id: '1001' },
+                        { question: 'في أي سنة وقعت معركة اليرموك؟', correct_answer: '636 م', id: '1002' },
+                        { question: 'من هو المؤرخ العربي الذي ألف كتاب "المقدمة"؟', correct_answer: 'ابن خلدون', id: '1003' },
+                        { question: 'ما هي المدينة العربية التي كانت عاصمة الدولة الأموية؟', correct_answer: 'دمشق', id: '1004' },
+                        { question: 'من هو الشاعر العربي الملقب بالمتنبي؟', correct_answer: 'أحمد بن الحسين', id: '1005' },
+                        { question: 'في أي سنة تأسست جامعة الدول العربية؟', correct_answer: '1945', id: '1006' },
+                        { question: 'من هو الصحابي الملقب بذي النورين؟', correct_answer: 'عثمان بن عفان', id: '1007' },
+                        { question: 'ما هي الدولة العربية التي كانت تُعرف باسم الحجاز قبل توحيدها؟', correct_answer: 'السعودية', id: '1008' },
+                        { question: 'من هو الشاعر العربي الملقب بشاعر النيل؟', correct_answer: 'حافظ إبراهيم', id: '1009' },
+                        { question: 'في أي مدينة عربية تأسست أول جامعة إسلامية في العالم؟', correct_answer: 'القاهرة', id: '1010' },
+                        { question: 'ما هو اسم القائد العربي الذي قاد معركة حطين؟', correct_answer: 'صلاح الدين الأيوبي', id: '1011' },
+                        { question: 'ما هي الدولة العربية التي كانت عاصمتها بغداد في العصر العباسي؟', correct_answer: 'العراق', id: '1012' },
+                        { question: 'من هو العالم العربي الذي أسس علم الجبر؟', correct_answer: 'الخوارزمي', id: '1013' },
+                        { question: 'في أي سنة وقعت معركة القادسية؟', correct_answer: '636 م', id: '1014' },
+                        { question: 'ما هي الدولة العربية التي تُعرف باسم بلاد الشام تاريخيًا؟', correct_answer: 'سوريا', id: '1015' },
+                        { question: 'من هو الخليفة العباسي الذي أسس بيت الحكمة؟', correct_answer: 'المأمون', id: '1016' },
+                        { question: 'ما هي المدينة العربية التي كانت مركزًا للعلوم في الأندلس؟', correct_answer: 'قرطبة', id: '1017' },
+                        { question: 'من هو الشاعر العربي الذي كتب قصيدة "نهج البردة"؟', correct_answer: 'البوصيري', id: '1018' },
+                        { question: 'في أي سنة تم فتح مكة؟', correct_answer: '630 م', id: '1019' },
+                        { question: 'ما هي الدولة العربية التي تشتهر بقلعة الحديد؟', correct_answer: 'سوريا', id: '1020' },
+                        { question: 'من هو العالم العربي الذي ألف كتاب "الجامع في الطب"؟', correct_answer: 'ابن سينا', id: '1021' },
+                        { question: 'في أي سنة وقعت معركة مؤتة؟', correct_answer: '629 م', id: '1022' },
+                        { question: 'ما هي المدينة التي كانت عاصمة الدولة الفاطمية؟', correct_answer: 'القاهرة', id: '1023' },
+                        { question: 'من هو الشاعر العربي الذي كتب قصيدة "الأطلال"؟', correct_answer: 'إبراهيم ناجي', id: '1024' },
+                        { question: 'ما هي الدولة العربية التي كانت تُعرف باسم نجد تاريخيًا؟', correct_answer: 'السعودية', id: '1025' },
+                        { question: 'من هو العالم العربي الذي ألف كتاب "القانون في الطب"؟', correct_answer: 'ابن سينا', id: '1026' },
+                        { question: 'في أي سنة وقعت معركة الزلاقة؟', correct_answer: '1086 م', id: '1027' },
+                        { question: 'ما هي المدينة العربية التي كانت مركزًا للخلافة العباسية الأولى؟', correct_answer: 'الكوفة', id: '1028' },
+                        { question: 'من هو الشاعر العربي الذي كتب قصيدة "سينية البحتري"؟', correct_answer: 'البحتري', id: '1029' },
+                        { question: 'في أي سنة تم فتح القدس على يد صلاح الدين؟', correct_answer: '1187 م', id: '1030' }
+                    ];
+                    questions = arabicQuestions;
+                    shuffle(questions);
+                } else if (gameType === 'confessions') {
+                    const confessionQuestions = [
+                        { question: 'ما هو أكثر موقف محرج مررت به في حياتك؟', id: '1' },
+                        { question: 'ما هو السر الذي لم تخبر به أحد من قبل؟', id: '2' },
+                        { question: 'هل كذبت يومًا للخروج من موقف صعب؟ ماذا كان؟', id: '3' },
+                        { question: 'ما هو أغرب طعام جربته في حياتك؟', id: '4' },
+                        { question: 'هل كنت معجبًا بشخص دون أن يعرف؟ من هو؟', id: '5' },
+                        { question: 'ما هي أسوأ هدية تلقيتها على الإطلاق؟', id: '6' },
+                        { question: 'هل فعلت شيئًا مضحكًا أمام شخص مهم؟ ماذا حدث؟', id: '7' },
+                        { question: 'ما هو أكثر شيء ندمت على فعله؟', id: '8' },
+                        { question: 'هل كسرت قاعدة أو قانونًا يومًا؟ كيف؟', id: '9' },
+                        { question: 'ما هو أكثر شيء مجنون فعلته من أجل الحب؟', id: '10' },
+                        { question: 'هل سبق وشاركت في مقلب وندمت عليه؟', id: '11' },
+                        { question: 'ما هو أكثر موقف جعلك تضحك بلا توقف؟', id: '12' },
+                        { question: 'هل كنت في مكان لم يكن من المفترض أن تكون فيه؟ أين؟', id: '13' },
+                        { question: 'ما هو أكثر شيء محرج اشتريته؟', id: '14' },
+                        { question: 'هل أخفيت شيئًا عن صديق مقرب؟ ماذا؟', id: '15' },
+                        { question: 'ما هو أكثر موقف محرج حدث لك في المدرسة؟', id: '16' },
+                        { question: 'هل كنت يومًا في موقف جعلك تبكي من الضحك؟', id: '17' },
+                        { question: 'ما هو أغرب مكان نمت فيه؟', id: '18' },
+                        { question: 'هل كنت في موقف أردت فيه الهروب منه؟ ماذا حدث؟', id: '19' },
+                        { question: 'ما هو أكثر شيء محرج قلته لشخص ما؟', id: '20' },
+                        { question: 'هل نسيت اسم شخص أثناء التحدث معه؟ ماذا فعلت؟', id: '21' },
+                        { question: 'ما هو أكثر موقف محرج في عيد ميلادك؟', id: '22' },
+                        { question: 'هل أخطأت في اسم شخص مهم أمام الآخرين؟', id: '23' },
+                        { question: 'ما هو أغرب طعام مزجته معًا؟', id: '24' },
+                        { question: 'هل كنت في موقف اضطررت فيه للغناء أمام الآخرين؟', id: '25' },
+                        { question: 'ما هو أكثر سر لا تريد أن تعترف به أمام أحد؟', id: '1001' },
+                        { question: 'هل كنت في علاقة سرية؟ كيف كانت؟', id: '1002' },
+                        { question: 'ما هو أكثر شيء محرج فعلته في موعد غرامي؟', id: '1003' },
+                        { question: 'هل كتبت رسالة حب ولم ترسلها؟ لمن؟', id: '1004' },
+                        { question: 'ما هو أكثر موقف جعلك تشعر بالذنب؟', id: '1005' },
+                        { question: 'هل كنت متورطًا في شجار أو مشكلة كبيرة؟ ماذا حدث؟', id: '1006' },
+                        { question: 'ما هو أكثر شيء محرج قلته أمام حشد؟', id: '1007' },
+                        { question: 'هل خدعت يومًا في اختبار أو امتحان؟ كيف؟', id: '1008' },
+                        { question: 'ما هو الشيء الذي تخاف أن يعرفه الناس عنك؟', id: '1009' },
+                        { question: 'هل كنت في موقف شعرت فيه بالغيرة الشديدة؟ متى؟', id: '1010' },
+                        { question: 'هل كنت في موقف اضطررت فيه للاعتذار بشدة؟ ماذا حدث؟', id: '1011' },
+                        { question: 'ما هو أكثر قرار ندمت عليه في حياتك؟', id: '1012' },
+                        { question: 'هل كنت في موقف شعرت فيه بالخجل من عائلتك؟', id: '1013' },
+                        { question: 'ما هو أكثر سر أخفيته عن والديك؟', id: '1014' },
+                        { question: 'هل كنت في موقف شعرت فيه بالإحراج بسبب ملابسك؟', id: '1015' }
+                    ];
+                    questions = confessionQuestions;
+                    shuffle(questions);
+                } else if (gameType === 'guess') {
+                    try {
+                        const res = await fetch('https://restcountries.com/v3.1/region/middle%20east');
+                        const data = await res.json();
+                        if (data && Array.isArray(data)) {
+                            const countryList = data.map(country => ({
+                                ...country,
+                                id: `${country.cca3}-${Math.random().toString(36).substr(2, 9)}`
+                            }));
+                            const expandedCountries = [];
+                            const requiredQuestions = Math.max(num, 50);
+                            while (expandedCountries.length < requiredQuestions) {
+                                countryList.forEach(c => {
+                                    if (expandedCountries.length < requiredQuestions) {
+                                        expandedCountries.push({
+                                            ...c,
+                                            id: `${c.cca3}-${Math.random().toString(36).substr(2, 9)}`
+                                        });
+                                    }
+                                });
+                            }
+                            shuffle(expandedCountries);
+                            questions = expandedCountries;
+                        } else {
+                            throw new Error('فشل تحميل بيانات الدول');
+                        }
+                    } catch (error) {
+                        console.error('Error fetching countries:', error);
+                        questions = [
+                            { name: { common: 'مصر' }, cca2: 'EG', id: 'EG-1' },
+                            { name: { common: 'السعودية' }, cca2: 'SA', id: 'SA-1' },
+                            { name: { common: 'الأردن' }, cca2: 'JO', id: 'JO-1' },
+                            { name: { common: 'العراق' }, cca2: 'IQ', id: 'IQ-1' },
+                            { name: { common: 'لبنان' }, cca2: 'LB', id: 'LB-1' }
+                        ];
+                        shuffle(questions);
+                    }
+                }
+                usedQuestions.clear();
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                alert('حدث خطأ أثناء تحميل الأسئلة، حاول مرة أخرى لاحقًا.');
+            }
+        }
+
+        function decodeHTML(html) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+        function generateNameInputs() {
+            const num = parseInt(document.getElementById('numPlayers').value);
+            const namesDiv = document.getElementById('names');
+            namesDiv.innerHTML = '';
+            for (let i = 1; i <= num; i++) {
+                const input = document.createElement('input');
+                input.placeholder = `اسم اللاعب ${i}`;
+                input.style.margin = '10px';
+                input.required = true;
+                namesDiv.appendChild(input);
+                namesDiv.appendChild(document.createElement('br'));
+            }
+        }
+
+        function drawWheel(angle = 0) {
+            const canvas = document.getElementById('wheel');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            const num = players.length;
+            const arc = 2 * Math.PI / num;
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(angle * Math.PI / 180);
+            for (let i = 0; i < num; i++) {
+                ctx.beginPath();
+                ctx.arc(0, 0, w / 2 - 20, i * arc, (i + 1) * arc);
+                ctx.lineTo(0, 0);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.save();
+                ctx.rotate(i * arc + arc / 2);
+                ctx.translate(w / 3, 0);
+                ctx.rotate(Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Tajawal';
+                ctx.fillText(players[i].name, 0, 0);
+                ctx.restore();
+            }
+            ctx.rotate(-angle * Math.PI / 180);
+            ctx.translate(-w / 2, -h / 2);
+            ctx.beginPath();
+            ctx.moveTo(w / 2, h - 80);
+            ctx.lineTo(w / 2 - 30, h - 20);
+            ctx.lineTo(w / 2 + 30, h - 20);
+            ctx.closePath();
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function spinWheel() {
+            if (questionsAsked >= totalQuestions()) {
+                endGame();
+                return;
+            }
+            spinSound.play();
+            clickSound.play();
+            document.getElementById('spinBtn').disabled = true;
+            const spinAngle = Math.random() * 360 * 5 + 360 * 10;
+            const duration = 6000 + Math.random() * 2000;
+            const startAngle = currentWheelAngle;
+            const startTime = Date.now();
+            function animateSpin() {
+                const elapsed = Date.now() - startTime;
+                let progress = elapsed / duration;
+                if (progress > 1) progress = 1;
+                const ease = progress ** 2 * (3 - 2 * progress);
+                const angle = startAngle + spinAngle * ease;
+                currentWheelAngle = angle % 360;
+                drawWheel(currentWheelAngle);
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    const num = players.length;
+                    const segmentAngle = 360 / num;
+                    const normalized = (currentWheelAngle % 360);
+                    const index = Math.floor((360 - normalized) / segmentAngle) % num;
+                    currentPlayer = players[index];
+                    document.getElementById('question').classList.add('pulse');
+                    setTimeout(showQuestion, 500);
+                }
+            }
+            requestAnimationFrame(animateSpin);
+            document.body.style.background = `linear-gradient(to bottom, #${Math.floor(Math.random()*16777215).toString(16)}, #${Math.floor(Math.random()*16777215).toString(16)})`;
+        }
+
+        function showQuestion() {
+            if (questionsAsked >= totalQuestions()) {
+                endGame();
+                return;
+            }
+            document.getElementById('question').classList.remove('pulse');
+            if (questions.length === 0) {
+                loadQuestions(totalQuestions()).then(() => {
+                    if (questions.length === 0) {
+                        endGame();
+                        return;
+                    }
+                    displayQuestion();
+                });
+            } else {
+                displayQuestion();
+            }
+        }
+
+        function displayQuestion() {
+            let q;
+            do {
+                q = questions.shift();
+                if (!q || usedQuestions.has(q.id)) {
+                    if (questions.length === 0) {
+                        loadQuestions(totalQuestions()).then(() => {
+                            if (questions.length === 0) {
+                                endGame();
+                                return;
+                            }
+                            q = questions.shift();
+                            if (q && !usedQuestions.has(q.id)) {
+                                usedQuestions.add(q.id);
+                                proceedWithQuestion(q);
+                            } else {
+                                endGame();
+                            }
+                        });
+                        return;
+                    }
+                    continue;
+                }
+                usedQuestions.add(q.id);
+                break;
+            } while (questions.length > 0);
+            if (q) {
+                proceedWithQuestion(q);
+            } else {
+                endGame();
+            }
+        }
+
+        function proceedWithQuestion(q) {
+            questionsAsked++;
+            const questionDiv = document.getElementById('question');
+            const answerDiv = document.getElementById('answer');
+            if (gameType === 'general') {
+                questionDiv.innerHTML = q.question;
+            } else if (gameType === 'confessions') {
+                questionDiv.innerHTML = q.question;
+            } else if (gameType === 'guess') {
+                const name = q.name.common;
+                const half = Math.floor(name.length / 2);
+                const hint = name.substring(0, half) + ' _'.repeat(name.length - half);
+                const flag = countryFlag(q.cca2);
+                questionDiv.innerHTML = `${hint} ${flag}`;
+            }
+            questionDiv.style.display = 'block';
+            answerDiv.style.display = 'none';
+            document.getElementById('buttons').style.display = 'none';
+            let time = 15;
+            document.getElementById('timer').innerHTML = time;
+            const interval = setInterval(() => {
+                time--;
+                document.getElementById('timer').innerHTML = time;
+                if (time <= 0) {
+                    clearInterval(interval);
+                    showAnswer(q);
+                }
+            }, 1000);
+        }
+
+        function showAnswer(q) {
+            const answerDiv = document.getElementById('answer');
+            if (gameType === 'general') {
+                answerDiv.innerHTML = `الجواب الصحيح: ${q.correct_answer}`;
+            } else if (gameType === 'confessions') {
+                answerDiv.innerHTML = 'هل اعترفت أو أجبت؟';
+            } else if (gameType === 'guess') {
+                answerDiv.innerHTML = `الاسم: ${q.name.common}`;
+            }
+            answerDiv.style.display = 'block';
+            document.getElementById('buttons').style.display = 'block';
+        }
+
+        function updateScores() {
+            const scoresList = document.getElementById('scoresList');
+            scoresList.innerHTML = '';
+            players.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'score-item';
+                div.innerHTML = `${p.name}: ${p.score} نقاط`;
+                scoresList.appendChild(div);
+            });
+        }
+
+        function endGame() {
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('end').style.display = 'block';
+            const maxScore = Math.max(...players.map(p => p.score));
+            const winners = players.filter(p => p.score === maxScore);
+            const winnerText = winners.length === 1 
+                ? `الفائز: ${winners[0].name} برصيد ${winners[0].score} نقاط`
+                : `الفائزون: ${winners.map(p => `${p.name} (${p.score} نقاط)`).join(', ')}`;
+            document.getElementById('winner').innerHTML = winnerText;
+            winSound.play();
+            confetti();
+        }
+
+        function confetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const particles = [];
+            for (let i = 0; i < 300; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height / 2,
+                    r: Math.random() * 6 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: Math.random() * 12 - 6,
+                    vy: Math.random() * 8 + 4,
+                    rotation: Math.random() * 360
+                });
+            }
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.beginPath();
+                    ctx.rect(-p.r, -p.r / 2, p.r * 2, p.r);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                    ctx.restore();
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.15;
+                    p.rotation += p.vx / 2;
+                    if (p.y > canvas.height) {
+                        p.y = 0;
+                        p.vy = Math.random() * 8 + 4;
+                    }
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+            setTimeout(() => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 6000);
+        }
+
+        // Event listeners
+        document.getElementById('supportBtn').onclick = () => {
+            clickSound.play();
+            window.open('https://www.paypal.com/paypalme/SaidElghysh', '_blank');
+        };
+        document.getElementById('startBtn').onclick = () => {
+            clickSound.play();
+            document.getElementById('home').style.display = 'none';
+            document.getElementById('gameSelect').style.display = 'block';
+        };
+        document.getElementById('generalBtn').onclick = () => {
+            clickSound.play();
+            gameType = 'general';
+            document.getElementById('gameSelect').style.display = 'none';
+            document.getElementById('setup').style.display = 'block';
+        };
+        document.getElementById('confessionsBtn').onclick = () => {
+            clickSound.play();
+            gameType = 'confessions';
+            document.getElementById('gameSelect').style.display = 'none';
+            document.getElementById('setup').style.display = 'block';
+        };
+        document.getElementById('guessBtn').onclick = () => {
+            clickSound.play();
+            gameType = 'guess';
+            document.getElementById('gameSelect').style.display = 'none';
+            document.getElementById('setup').style.display = 'block';
+        };
+        document.getElementById('startGameBtn').onclick = async () => {
+            clickSound.play();
+            const nameInputs = document.getElementById('names').querySelectorAll('input');
+            if (Array.from(nameInputs).some(input => !input.value.trim())) {
+                alert('يرجى إدخال أسماء جميع اللاعبين');
+                return;
+            }
+            players = Array.from(nameInputs).map((input, i) => ({
+                name: input.value.trim() || `لاعب ${i + 1}`,
+                score: 0
+            }));
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            drawWheel();
+            const numQ = parseInt(document.getElementById('numQuestions').value);
+            await loadQuestions(numQ);
+            updateScores();
+        };
+        document.getElementById('spinBtn').onclick = spinWheel;
+        document.getElementById('correctBtn').onclick = () => {
+            clickSound.play();
+            correctSound.play();
+            currentPlayer.score += 10;
+            updateScores();
+            document.getElementById('question').style.display = 'none';
+            document.getElementById('answer').style.display = 'none';
+            document.getElementById('buttons').style.display = 'none';
+            document.getElementById('timer').innerHTML = '';
+            document.getElementById('spinBtn').disabled = false;
+            if (questionsAsked >= totalQuestions()) {
+                endGame();
+            }
+        };
+        document.getElementById('wrongBtn').onclick = () => {
+            clickSound.play();
+            wrongSound.play();
+            currentPlayer.score -= 10;
+            updateScores();
+            document.getElementById('question').style.display = 'none';
+            document.getElementById('answer').style.display = 'none';
+            document.getElementById('buttons').style.display = 'none';
+            document.getElementById('timer').innerHTML = '';
+            document.getElementById('spinBtn').disabled = false;
+            if (questionsAsked >= totalQuestions()) {
+                endGame();
+            }
+        };
+        document.getElementById('restart').onclick = () => {
+            clickSound.play();
+            location.reload();
+        };
+
+        // Add click sound to select and input elements
+        document.querySelectorAll('select, input').forEach(element => {
+            element.addEventListener('change', () => clickSound.play());
+            element.addEventListener('click', () => clickSound.play());
+        });
+
+        // Initialize
+        generateNameInputs();
+    </script>
+</body>
+</html>
